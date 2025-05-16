@@ -1,10 +1,10 @@
 #ifndef _SIMPLEQOO_H
 #define _SIMPLEQOO_H
 
-#include <time.h>
 #include "tdigest.h"
 #include "network-reqs.h"
 #include "udpst_common.h"
+#include <time.h>
 
 // Simple Quality Attenuation (SQA) statistics
 // Implements a quality attenuation value estimator following the specification of TR-452.1,
