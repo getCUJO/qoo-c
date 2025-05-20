@@ -19,6 +19,9 @@
 
 struct sqa_stats *sqa_stats_create() {
   struct sqa_stats *stats = malloc(sizeof(struct sqa_stats));
+  if (stats == NULL) {
+    return NULL;
+  }
   stats->number_of_samples = 0;
   stats->number_of_lost_packets = 0;
   stats->min.tv_sec = 0;
@@ -124,7 +127,7 @@ double sqa_stats_get_min_as_seconds(struct sqa_stats *statistics) {
     return 0.0; // No samples (only lost packets)
     }
   int64_t delay_usec = tspecusec(&statistics->min);
-  double delay_in_seconds = (float)delay_usec / (float)USEC_IN_SEC;
+  double delay_in_seconds = (double)delay_usec / (double)USEC_IN_SEC;
   return delay_in_seconds;
 }
 
@@ -133,7 +136,7 @@ double sqa_stats_get_max_as_seconds(struct sqa_stats *statistics) {
     return 0.0; // No samples (only lost packets)
     }
   int64_t delay_usec = tspecusec(&statistics->max);
-  double delay_in_seconds = (float)delay_usec / (float)USEC_IN_SEC;
+  double delay_in_seconds = (double)delay_usec / (double)USEC_IN_SEC;
   return delay_in_seconds;
 }
 

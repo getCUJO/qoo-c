@@ -10,6 +10,7 @@ option(BUILD_SHARED "Build shared library" ON)
 option(BUILD_STATIC "Build static library" ON)
 option(BUILD_TESTS "Build tests" ON)
 OPTION(ENABLE_CODECOVERAGE "Enable code coverage testing support" OFF)
+OPTION(ENABLE_STATIC_ANALYSIS "Enable static analysis support" OFF)
 OPTION(ENABLE_PROFILE "Enable code profiling support" OFF)
 option(BUILD_EXAMPLES "Build examples" OFF)
 
@@ -45,6 +46,12 @@ if(ENABLE_CODECOVERAGE)
   include(GNUInstallDirs)
   include(UseCodeCoverage)
 ENDIF()
+
+IF(ENABLE_STATIC_ANALYSIS)
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  add_compile_options(-fanalyzer)
+ENDIF()
+
 
 # Generate position-independent code (-fPIC on UNIX)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
