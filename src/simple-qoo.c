@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "simple-qoo.h"
 
+#include <stdint.h>
 struct sqa_stats *sqa_stats_create()
 {
     struct sqa_stats *stats = malloc(sizeof(struct sqa_stats));
