@@ -1,6 +1,7 @@
 #include "simple-qoo.h"
 #include "udpst_common.h"
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 
 // Default offset in seconds Just need something in the
