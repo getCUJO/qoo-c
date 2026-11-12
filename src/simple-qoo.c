@@ -12,7 +12,6 @@
 
 #define NSEC_IN_SEC	1000000000;
 #define USEC_IN_SEC	1000000;
-#define SQUARE_EXPONENT 2.0
 #define MEDIAN_QUANTILE 0.5
 #define MAX_PERCENTILE	100.0
 #define MAX_QOO		100.0
@@ -32,7 +31,8 @@ struct sqa_stats *sqa_stats_create()
 	stats->max.tv_nsec = 0;
 	stats->delay_eq_loss_threshold.tv_sec = DEFAULT_LOSS_TIMEOUT;
 	stats->delay_eq_loss_threshold.tv_nsec = 0;
-	stats->shifted_sum_of_squares = 0;
+	stats->mean = 0;
+	stats->m2 = 0;
 	stats->shifted_sum = 0;
 	stats->offset = DEFAULT_OFFSET;
 	stats->empirical_distribution = td_new(DEFAULT_COMPRESSION);
@@ -90,8 +90,13 @@ void sqa_stats_add_sample(struct sqa_stats *statistics, struct timespec *delay)
 
 		statistics->shifted_sum +=
 			delay_in_seconds - statistics->offset;
-		statistics->shifted_sum_of_squares += pow(
-			delay_in_seconds - statistics->offset, SQUARE_EXPONENT);
+		int number_of_latency_samples =
+			statistics->number_of_samples -
+			statistics->number_of_lost_packets;
+		double delta = delay_in_seconds - statistics->mean;
+		statistics->mean += delta / number_of_latency_samples;
+		double delta2 = delay_in_seconds - statistics->mean;
+		statistics->m2 += delta * delta2;
 		td_add(statistics->empirical_distribution, delay_in_seconds, 1);
 	}
 }
@@ -185,9 +190,7 @@ double sqa_stats_get_mean(struct sqa_stats *statistics)
 	    statistics->number_of_lost_packets) {
 		return 0.0; // No samples (only lost packets)
 	}
-	return statistics->offset +
-	       (statistics->shifted_sum / (statistics->number_of_samples -
-					   statistics->number_of_lost_packets));
+	return statistics->mean;
 }
 
 double sqa_stats_get_trimmed_mean(struct sqa_stats *statistics,
@@ -209,13 +212,9 @@ double sqa_stats_get_variance(struct sqa_stats *statistics)
 	    statistics->number_of_lost_packets) {
 		return 0.0; // No samples (only lost packets)
 	}
-	// Use the offset values of sum and sum_of_squares for numerical stability
 	int number_of_latency_samples = statistics->number_of_samples -
 					statistics->number_of_lost_packets;
-	return (statistics->shifted_sum_of_squares -
-		pow(statistics->shifted_sum, SQUARE_EXPONENT) /
-			number_of_latency_samples) /
-	       (number_of_latency_samples);
+	return statistics->m2 / number_of_latency_samples;
 }
 
 double sqa_stats_get_standard_deviation(struct sqa_stats *statistics)

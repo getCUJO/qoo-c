@@ -11,7 +11,8 @@ struct sqa_stats {
 	// Use timespec for the exact measurements:
 	struct timespec min, max, delay_eq_loss_threshold;
 	// Use double for the approximations:
-	double shifted_sum, shifted_sum_of_squares, offset;
+	double shifted_sum, offset;
+	double mean, m2; // Welford's running mean and sum of squared deviations
 	td_histogram_t *empirical_distribution;
 };
 

@@ -7,6 +7,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <cmocka.h>
+#include <math.h>
 
 #include "../../src/simple-qoo.h"
 
@@ -18,6 +19,9 @@ static void test_sqa_stats_single_sample(void **state)
 {
 	UNUSED(state);
 	struct sqa_stats *stats = sqa_stats_create();
+	assert_true(sqa_stats_get_mean(stats) == 0.0);
+	assert_true(sqa_stats_get_variance(stats) == 0.0);
+	assert_true(sqa_stats_get_standard_deviation(stats) == 0.0);
 	struct timespec measured_delay;
 	measured_delay.tv_sec = 0;
 	measured_delay.tv_nsec = 200 * 1000 * 1000; // 200ms
@@ -89,6 +93,14 @@ static void sqa_stats_test_loss(void **state)
 	assert_in_range(sqa_stats_get_loss_percentage(stats), 0, 100);
 	assert_float_equal(
 		sqa_stats_get_loss_percentage(stats), 100, 0.0000001);
+	assert_true(sqa_stats_get_mean(stats) == 0.0);
+	assert_true(sqa_stats_get_variance(stats) == 0.0);
+	assert_true(sqa_stats_get_standard_deviation(stats) == 0.0);
+	measured_delay.tv_sec = 0;
+	sqa_stats_add_sample(stats, &measured_delay);
+	assert_float_equal(sqa_stats_get_mean(stats), 0.2, 0.0000001);
+	assert_true(sqa_stats_get_variance(stats) == 0.0);
+	assert_true(sqa_stats_get_standard_deviation(stats) == 0.0);
 	sqa_stats_destroy(stats);
 }
 
@@ -106,8 +118,38 @@ static void sqa_stats_test_1M_samples(void **state)
 	assert_int_equal(sqa_stats_get_number_of_lost_packets(stats), 0);
 	assert_float_equal(sqa_stats_get_loss_percentage(stats), 0, 0.0000001);
 	assert_float_equal(sqa_stats_get_mean(stats), 0.2, 0.0000001);
-	assert_float_equal(sqa_stats_get_standard_deviation(stats), 0, 0.0001);
+	assert_true(sqa_stats_get_variance(stats) == 0.0);
+	assert_true(sqa_stats_get_standard_deviation(stats) == 0.0);
 	sqa_stats_destroy(stats);
+}
+
+static void sqa_stats_test_small_variance(void **state)
+{
+	UNUSED(state);
+	const long base_delays[] = {200000000, 1000000000};
+	for (size_t j = 0; j < sizeof(base_delays) / sizeof(base_delays[0]);
+	     j++) {
+		struct sqa_stats *stats = sqa_stats_create();
+		sqa_stats_count_loss(stats);
+		for (int i = 0; i < 10000; i++) {
+			sqa_stats_add_sample_nsec(
+				stats, base_delays[j] + (i % 2) * 2000);
+			sqa_stats_count_loss(stats);
+		}
+		assert_int_equal(sqa_stats_get_number_of_samples(stats), 20001);
+		assert_int_equal(sqa_stats_get_number_of_lost_packets(stats),
+				 10001);
+		assert_float_equal(sqa_stats_get_mean(stats),
+				   base_delays[j] / 1e9 + 1e-6,
+				   1e-12);
+		double variance = sqa_stats_get_variance(stats);
+		double stddev = sqa_stats_get_standard_deviation(stats);
+		assert_true(isfinite(variance));
+		assert_true(isfinite(stddev));
+		assert_float_equal(variance, 1e-12, 1e-20);
+		assert_float_equal(stddev, 1e-6, 1e-14);
+		sqa_stats_destroy(stats);
+	}
 }
 
 struct simple_NR_list *create_network_requirement()
@@ -177,6 +219,7 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(test_sqa_stats_multiple_samples),
 		cmocka_unit_test(sqa_stats_test_loss),
 		cmocka_unit_test(sqa_stats_test_1M_samples),
+		cmocka_unit_test(sqa_stats_test_small_variance),
 		cmocka_unit_test(test_example_from_readme),
 	};
 	return cmocka_run_group_tests(
