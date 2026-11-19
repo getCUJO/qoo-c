@@ -32,13 +32,13 @@ static void test_sqa_stats_single_sample(void **state)
 	tmp = sqa_stats_get_min(stats);
 	assert_true((tmp->tv_sec == 0) && (tmp->tv_nsec == 200 * 1000 * 1000));
 	double tmp2 = sqa_stats_get_sum(stats);
-	assert_in_range(tmp2, 0, 99999999999);
+	assert_uint_in_range(tmp2, 0, 99999999999);
 	assert_float_equal(tmp2, 0.2, 0.000001);
 	assert_true(sqa_stats_get_number_of_lost_packets(stats) == 0);
 	assert_true(sqa_stats_get_delay_eq_loss_threshold(stats)->tv_sec == 15);
 	assert_true(sqa_stats_get_delay_eq_loss_threshold(stats)->tv_nsec == 0);
 	tmp2 = sqa_stats_get_mean(stats);
-	assert_in_range(tmp2, 0, 99999999999);
+	assert_uint_in_range(tmp2, 0, 99999999999);
 	assert_float_equal(tmp2, 0.2, 0.000001);
 	assert_true(sqa_stats_get_variance(stats) == 0.0);
 	assert_true(sqa_stats_get_standard_deviation(stats) == 0.0);
@@ -65,7 +65,7 @@ static void test_sqa_stats_multiple_samples(void **state)
 	assert_true((tmp->tv_sec == 0) && (tmp->tv_nsec == 200 * 1000 * 1000));
 	tmp = sqa_stats_get_min(stats);
 	assert_true((tmp->tv_sec == 0) && (tmp->tv_nsec == 100 * 1000 * 1000));
-	assert_in_range(sqa_stats_get_sum(stats), 0, 9999999);
+	assert_uint_in_range(sqa_stats_get_sum(stats), 0, 9999999);
 	assert_float_equal(sqa_stats_get_sum(stats), 0.3, 0.0000001);
 	assert_true(sqa_stats_get_number_of_lost_packets(stats) == 0);
 	assert_float_equal(sqa_stats_get_mean(stats), 0.15, 0.0000001);
@@ -90,7 +90,7 @@ static void sqa_stats_test_loss(void **state)
 	sqa_stats_add_sample(stats, &measured_delay);
 	assert_int_equal(sqa_stats_get_number_of_samples(stats), 1);
 	assert_int_equal(sqa_stats_get_number_of_lost_packets(stats), 1);
-	assert_in_range(sqa_stats_get_loss_percentage(stats), 0, 100);
+	assert_uint_in_range(sqa_stats_get_loss_percentage(stats), 0, 100);
 	assert_float_equal(
 		sqa_stats_get_loss_percentage(stats), 100, 0.0000001);
 	assert_true(sqa_stats_get_mean(stats) == 0.0);
